@@ -6,13 +6,29 @@
   "icon": "extension-icon.png",
   "author": "brandonnguyenn27",
   "platforms": [
-    "macOS",
-    "Windows"
+    "macOS"
   ],
   "categories": [
     "Productivity"
   ],
   "license": "MIT",
+  "preferences": [
+    {
+      "name": "canvasBaseUrl",
+      "title": "Canvas Base URL",
+      "description": "Your Canvas instance URL (e.g., https://your-school.instructure.com)",
+      "type": "textfield",
+      "required": true,
+      "placeholder": "https://your-school.instructure.com"
+    },
+    {
+      "name": "canvasApiToken",
+      "title": "Canvas API Token",
+      "description": "Your personal Canvas API token (generate from Profile → Settings → Approved Integrations)",
+      "type": "password",
+      "required": true
+    }
+  ],
   "commands": [
     {
       "name": "index",
