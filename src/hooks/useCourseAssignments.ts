@@ -49,6 +49,15 @@ function categorizeAssignments(assignments: CanvasAssignment[]): CategorizedAssi
     }
   });
 
+  // Sort active assignments by due date (soonest first)
+  // Assignments without due dates go to the end
+  active.sort((a, b) => {
+    if (!a.due_at && !b.due_at) return 0;
+    if (!a.due_at) return 1;
+    if (!b.due_at) return -1;
+    return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
+  });
+
   return { submitted, active, pastDue };
 }
 

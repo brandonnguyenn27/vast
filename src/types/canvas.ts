@@ -1,4 +1,15 @@
 // Canvas API related types
+export interface CanvasEnrollment {
+  id: number;
+  user_id: number;
+  course_id: number;
+  type: string;
+  computed_current_score?: number;
+  computed_final_score?: number;
+  computed_current_grade?: string;
+  computed_final_grade?: string;
+}
+
 export interface CanvasCourse {
   id: number;
   name: string;
@@ -7,6 +18,7 @@ export interface CanvasCourse {
   start_at?: string;
   end_at?: string;
   workflow_state: string;
+  enrollments?: CanvasEnrollment[];
 }
 
 export interface CanvasSubmission {
@@ -52,5 +64,40 @@ export interface CanvasUpcomingEvent {
     submission_types: string[];
     name?: string;
   };
+  quiz?: {
+    id: number;
+    title: string;
+    description?: string;
+    due_at?: string;
+    points_possible: number;
+    course_id: number;
+    quiz_type?: string;
+  };
   end_at?: string;
+  start_at?: string;
+  context_code?: string;
+  location_name?: string;
+}
+
+// Unified feed item type that combines calendar events and assignments
+export type FeedItemType = "assignment" | "quiz" | "exam" | "announcement" | "calendar_event" | "other";
+
+export interface FeedItem {
+  id: string;
+  title: string;
+  type: FeedItemType;
+  description?: string;
+  due_at?: string;
+  start_at?: string;
+  end_at?: string;
+  course_id?: number;
+  course_name?: string;
+  points_possible?: number;
+  submission_types?: string[];
+  assignment_id?: number;
+  quiz_id?: number;
+  location_name?: string;
+  all_day?: boolean;
+  workflow_state?: string;
+  submission?: CanvasSubmission;
 }

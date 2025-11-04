@@ -34,6 +34,6 @@ export function useCanvasAuth(): UseCanvasAuthReturn {
   return {
     isConfigured,
     config,
-    isLoading: false, // getPreferenceValues is synchronous
+    isLoading: false,
   };
 }

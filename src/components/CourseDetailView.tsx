@@ -2,6 +2,7 @@ import { List, Icon, ActionPanel, Action } from "@raycast/api";
 import { useCourseAssignments } from "../hooks/useCourseAssignments";
 import { CanvasCourse, CanvasAssignment } from "../types/canvas";
 import { formatDate } from "../utils/date";
+import { useCanvasAuth } from "../hooks/useCanvasAuth";
 
 interface CourseDetailViewProps {
   course: CanvasCourse;
@@ -9,15 +10,16 @@ interface CourseDetailViewProps {
 
 export function CourseDetailView({ course }: CourseDetailViewProps) {
   const { active, pastDue, submitted, isLoading, error, revalidate } = useCourseAssignments(course.id);
+  const { config } = useCanvasAuth();
 
   const getAssignmentIcon = (assignment: CanvasAssignment) => {
-    if (assignment.submission) return Icon.CheckCircle; // Submitted
+    if (assignment.submission) return Icon.CheckCircle;
     if (!assignment.due_at) return Icon.Clock;
     const dueDate = new Date(assignment.due_at);
     const now = new Date();
-    if (dueDate < now) return Icon.XMarkCircle; // Past due
-    if (dueDate.getTime() - now.getTime() < 24 * 60 * 60 * 1000) return Icon.ExclamationMark; // Due soon
-    return Icon.Calendar; // Future
+    if (dueDate < now) return Icon.XMarkCircle;
+    if (dueDate.getTime() - now.getTime() < 24 * 60 * 60 * 1000) return Icon.ExclamationMark;
+    return Icon.Calendar;
   };
 
   if (error) {
@@ -77,6 +79,10 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
       });
     }
 
+    const assignmentUrl = config?.canvasBaseUrl
+      ? `${config.canvasBaseUrl.replace(/\/$/, "")}/courses/${assignment.course_id}/assignments/${assignment.id}`
+      : null;
+
     return (
       <List.Item
         key={assignment.id}
@@ -84,6 +90,19 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
         subtitle={subtitleParts.join(" • ")}
         accessories={accessories}
         icon={getAssignmentIcon(assignment)}
+        actions={
+          <ActionPanel>
+            {assignmentUrl && (
+              <Action.OpenInBrowser title="Open Assignment in Browser" icon={Icon.Globe} url={assignmentUrl} />
+            )}
+            <Action
+              title="Refresh Assignments"
+              icon={Icon.ArrowClockwise}
+              onAction={() => revalidate()}
+              shortcut={{ modifiers: ["cmd"], key: "r" }}
+            />
+          </ActionPanel>
+        }
       />
     );
   };
@@ -97,6 +116,14 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
       searchBarPlaceholder="Search assignments..."
       actions={
         <ActionPanel>
+          {config?.canvasBaseUrl && (
+            <Action.OpenInBrowser
+              title="Open Course in Browser"
+              icon={Icon.Globe}
+              url={`${config.canvasBaseUrl.replace(/\/$/, "")}/courses/${course.id}`}
+              shortcut={{ modifiers: ["cmd"], key: "o" }}
+            />
+          )}
           <Action
             title="Refresh Assignments"
             icon={Icon.ArrowClockwise}

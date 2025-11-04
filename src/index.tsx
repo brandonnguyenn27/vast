@@ -6,7 +6,7 @@ import { CourseDetailView } from "./components/CourseDetailView";
 import { CanvasCourse } from "./types/canvas";
 
 export default function Command() {
-  const { isConfigured } = useCanvasAuth();
+  const { isConfigured, config } = useCanvasAuth();
   const { courses, isLoading, error, revalidate } = useCanvasCourses();
 
   if (!isConfigured) {
@@ -30,26 +30,49 @@ export default function Command() {
     );
   }
 
+  const getGradeAccessory = (course: CanvasCourse) => {
+    // Try to get grade from enrollment data
+    if (course.enrollments && course.enrollments.length > 0) {
+      const enrollment = course.enrollments[0];
+      // Only use computed_current_score
+      const score = enrollment.computed_current_score;
+      if (score !== undefined && score !== null) {
+        return { text: `${score.toFixed(2)}%` };
+      }
+    }
+    return undefined;
+  };
+
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search courses...">
       {courses && courses.length > 0 ? (
-        courses.map((course: CanvasCourse) => (
-          <List.Item
-            key={course.id}
-            title={course.name}
-            subtitle={course.course_code}
-            icon={Icon.Book}
-            actions={
-              <ActionPanel>
-                <Action.Push
-                  title="View Course Details"
-                  icon={Icon.ArrowRight}
-                  target={<CourseDetailView course={course} />}
-                />
-              </ActionPanel>
-            }
-          />
-        ))
+        courses.map((course: CanvasCourse) => {
+          const accessory = getGradeAccessory(course);
+          return (
+            <List.Item
+              key={course.id}
+              title={course.name}
+              icon={Icon.Book}
+              accessories={accessory ? [accessory] : undefined}
+              actions={
+                <ActionPanel>
+                  <Action.Push
+                    title="View Course Details"
+                    icon={Icon.ArrowRight}
+                    target={<CourseDetailView course={course} />}
+                  />
+                  {config?.canvasBaseUrl && (
+                    <Action.OpenInBrowser
+                      title="Open Course in Browser"
+                      icon={Icon.Globe}
+                      url={`${config.canvasBaseUrl.replace(/\/$/, "")}/courses/${course.id}`}
+                    />
+                  )}
+                </ActionPanel>
+              }
+            />
+          );
+        })
       ) : (
         <List.EmptyView
           icon="📚"

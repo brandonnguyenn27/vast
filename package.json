@@ -35,6 +35,12 @@
       "title": "View Courses",
       "description": "View Courses",
       "mode": "view"
+    },
+    {
+      "name": "assignmentFeed",
+      "title": "Canvas Feed",
+      "description": "View your assignment feed with assignments, quizzes, exams, and events",
+      "mode": "view"
     }
   ],
   "dependencies": {
