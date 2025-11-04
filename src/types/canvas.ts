@@ -9,6 +9,16 @@ export interface CanvasCourse {
   workflow_state: string;
 }
 
+export interface CanvasSubmission {
+  id: number;
+  assignment_id: number;
+  user_id: number;
+  submitted_at?: string;
+  workflow_state: string;
+  score?: number;
+  graded_at?: string;
+}
+
 export interface CanvasAssignment {
   id: number;
   name: string;
@@ -17,6 +27,7 @@ export interface CanvasAssignment {
   points_possible: number;
   course_id: number;
   submission_types: string[];
+  submission?: CanvasSubmission;
 }
 
 // Canvas upcoming events API response structure

@@ -40,10 +40,10 @@ export async function fetchCanvasCourses(): Promise<CanvasCourse[]> {
 }
 
 /**
- * Fetches assignments for a specific course
+ * Fetches assignments for a specific course with submission information
  */
 export async function fetchCourseAssignments(courseId: number): Promise<CanvasAssignment[]> {
-  return makeCanvasRequest<CanvasAssignment[]>(`/courses/${courseId}/assignments?per_page=100`);
+  return makeCanvasRequest<CanvasAssignment[]>(`/courses/${courseId}/assignments?per_page=100&include[]=submission`);
 }
 
 /**
