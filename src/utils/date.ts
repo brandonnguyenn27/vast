@@ -51,3 +51,12 @@ export function formatTime(dateString?: string): string {
   });
   return timeString.replace(/\s+(AM|PM)/i, (match, period) => period.toLowerCase());
 }
+
+/**
+ * Gets the current date as a string in YYYY-MM-DD format
+ * This is used to invalidate cache when a new day starts
+ */
+export function getCurrentDateKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}

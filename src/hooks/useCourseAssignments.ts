@@ -8,44 +8,32 @@ import { CanvasAssignment } from "../types/canvas";
 interface CategorizedAssignments {
   active: CanvasAssignment[];
   pastDue: CanvasAssignment[];
-  submitted: CanvasAssignment[];
 }
 
 /**
- * Categorizes assignments into active, past due, and submitted
+ * Categorizes assignments into active and past due based on due date
+ * Active: assignments that haven't passed their due date yet (or have no due date)
+ * Past Due: assignments that have passed their due date
+ * Submission status is indicated by icons, not separate categories
  */
 function categorizeAssignments(assignments: CanvasAssignment[]): CategorizedAssignments {
-  const submitted: CanvasAssignment[] = [];
   const active: CanvasAssignment[] = [];
   const pastDue: CanvasAssignment[] = [];
 
   const now = new Date();
 
   assignments.forEach((assignment) => {
-    // Check if assignment has been submitted
-    // Canvas API returns submission object even for unsubmitted assignments with workflow_state "unsubmitted"
-    const hasSubmission =
-      assignment.submission &&
-      assignment.submission.workflow_state !== "unsubmitted" &&
-      (assignment.submission.workflow_state === "submitted" ||
-        assignment.submission.workflow_state === "graded" ||
-        assignment.submission.workflow_state === "pending_review");
-
-    if (hasSubmission) {
-      submitted.push(assignment);
-    } else {
-      // Check if assignment is past due
-      if (assignment.due_at) {
-        const dueDate = new Date(assignment.due_at);
-        if (dueDate < now) {
-          pastDue.push(assignment);
-        } else {
-          active.push(assignment);
-        }
+    // Group by due date only, regardless of submission status
+    if (assignment.due_at) {
+      const dueDate = new Date(assignment.due_at);
+      if (dueDate < now) {
+        pastDue.push(assignment);
       } else {
-        // No due date, consider it active
         active.push(assignment);
       }
+    } else {
+      // No due date, consider it active
+      active.push(assignment);
     }
   });
 
@@ -58,7 +46,15 @@ function categorizeAssignments(assignments: CanvasAssignment[]): CategorizedAssi
     return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
   });
 
-  return { submitted, active, pastDue };
+  // Sort past due assignments by due date (most recent first)
+  pastDue.sort((a, b) => {
+    if (!a.due_at && !b.due_at) return 0;
+    if (!a.due_at) return -1;
+    if (!b.due_at) return 1;
+    return new Date(b.due_at).getTime() - new Date(a.due_at).getTime();
+  });
+
+  return { active, pastDue };
 }
 
 /**
@@ -78,7 +74,7 @@ export function useCourseAssignments(courseId: number | null) {
     async (configured: boolean, id: number | null): Promise<CategorizedAssignments> => {
       if (!configured || !id) {
         console.log("useCourseAssignments: Not configured or no course ID, returning empty categories");
-        return { active: [], pastDue: [], submitted: [] };
+        return { active: [], pastDue: [] };
       }
 
       const assignmentsData = await fetchCourseAssignments(id);
@@ -88,7 +84,7 @@ export function useCourseAssignments(courseId: number | null) {
     },
     [isConfigured, courseId],
     {
-      initialData: { active: [], pastDue: [], submitted: [] },
+      initialData: { active: [], pastDue: [] },
       keepPreviousData: true,
       onError: (error) => {
         showToast({
@@ -112,7 +108,6 @@ export function useCourseAssignments(courseId: number | null) {
   return {
     active: (categorizedData?.active || []) as CanvasAssignment[],
     pastDue: (categorizedData?.pastDue || []) as CanvasAssignment[],
-    submitted: (categorizedData?.submitted || []) as CanvasAssignment[],
     isLoading,
     error,
     revalidate,

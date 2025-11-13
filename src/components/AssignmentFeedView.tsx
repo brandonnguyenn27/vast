@@ -181,9 +181,9 @@ export function AssignmentFeedView() {
         </>
       ) : (
         <List.EmptyView
-          icon="📝"
-          title="No Upcoming Items"
-          description={isLoading ? "Loading feed..." : "No assignments, quizzes, or events found."}
+          icon={isLoading ? Icon.Hourglass : Icon.Bookmark}
+          title={isLoading ? "Fetching your Canvas Feed... Hang Tight!" : "No Upcoming Items"}
+          description={isLoading ? "" : "No assignments, quizzes, or events found."}
           actions={
             <ActionPanel>
               <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={() => revalidate()} />

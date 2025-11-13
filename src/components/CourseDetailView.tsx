@@ -9,17 +9,19 @@ interface CourseDetailViewProps {
 }
 
 export function CourseDetailView({ course }: CourseDetailViewProps) {
-  const { active, pastDue, submitted, isLoading, error, revalidate } = useCourseAssignments(course.id);
+  const { active, pastDue, isLoading, error, revalidate } = useCourseAssignments(course.id);
   const { config } = useCanvasAuth();
 
   const getAssignmentIcon = (assignment: CanvasAssignment) => {
-    if (assignment.submission) return Icon.CheckCircle;
-    if (!assignment.due_at) return Icon.Clock;
-    const dueDate = new Date(assignment.due_at);
-    const now = new Date();
-    if (dueDate < now) return Icon.XMarkCircle;
-    if (dueDate.getTime() - now.getTime() < 24 * 60 * 60 * 1000) return Icon.ExclamationMark;
-    return Icon.Calendar;
+    const hasSubmission =
+      assignment.submission &&
+      assignment.submission.workflow_state !== "unsubmitted" &&
+      (assignment.submission.workflow_state === "submitted" ||
+        assignment.submission.workflow_state === "graded" ||
+        assignment.submission.workflow_state === "pending_review");
+
+    if (hasSubmission) return Icon.CheckCircle;
+    return Icon.Circle;
   };
 
   if (error) {
@@ -39,27 +41,31 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
     );
   }
 
-  const renderAssignment = (assignment: CanvasAssignment, category?: "active" | "pastDue" | "submitted") => {
+  const renderAssignment = (assignment: CanvasAssignment) => {
     const subtitleParts: string[] = [];
 
-    if (assignment.submission) {
-      if (assignment.submission.submitted_at) {
-        subtitleParts.push(`Submitted: ${formatDate(assignment.submission.submitted_at)}`);
+    // Show submission info if submitted
+    const submission = assignment.submission;
+    const hasSubmission =
+      submission &&
+      submission.workflow_state !== "unsubmitted" &&
+      (submission.workflow_state === "submitted" ||
+        submission.workflow_state === "graded" ||
+        submission.workflow_state === "pending_review");
+
+    if (hasSubmission && submission) {
+      if (submission.submitted_at) {
+        subtitleParts.push(`Submitted: ${formatDate(submission.submitted_at)}`);
       }
-      if (assignment.submission.score !== undefined && assignment.submission.score !== null) {
-        subtitleParts.push(`Score: ${assignment.submission.score}/${assignment.points_possible}`);
+      if (submission.score !== undefined && submission.score !== null) {
+        subtitleParts.push(`Score: ${submission.score}/${assignment.points_possible}`);
       }
     }
 
-    if (category === "active") {
-      if (assignment.due_at) {
-        subtitleParts.push(`Due: ${formatDate(assignment.due_at)}`);
-      } else {
-        subtitleParts.push("No due date");
-      }
-    } else if (assignment.due_at && !assignment.submission) {
+    // Always show due date
+    if (assignment.due_at) {
       subtitleParts.push(`Due: ${formatDate(assignment.due_at)}`);
-    } else if (!assignment.due_at && !assignment.submission) {
+    } else {
       subtitleParts.push("No due date");
     }
 
@@ -107,7 +113,7 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
     );
   };
 
-  const totalAssignments = submitted.length + active.length + pastDue.length;
+  const totalAssignments = active.length + pastDue.length;
 
   return (
     <List
@@ -137,17 +143,12 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
         <>
           {active.length > 0 && (
             <List.Section title={`Active (${active.length})`}>
-              {active.map((assignment) => renderAssignment(assignment, "active"))}
+              {active.map((assignment) => renderAssignment(assignment))}
             </List.Section>
           )}
           {pastDue.length > 0 && (
             <List.Section title={`Past Due (${pastDue.length})`}>
-              {pastDue.map((assignment) => renderAssignment(assignment, "pastDue"))}
-            </List.Section>
-          )}
-          {submitted.length > 0 && (
-            <List.Section title={`Submitted (${submitted.length})`}>
-              {submitted.map((assignment) => renderAssignment(assignment, "submitted"))}
+              {pastDue.map((assignment) => renderAssignment(assignment))}
             </List.Section>
           )}
         </>

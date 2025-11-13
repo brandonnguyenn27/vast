@@ -10,6 +10,14 @@ export interface CanvasEnrollment {
   computed_final_grade?: string;
 }
 
+export interface CanvasEnrollmentTerm {
+  id: number;
+  name: string;
+  start_at?: string;
+  end_at?: string;
+  workflow_state: string;
+}
+
 export interface CanvasCourse {
   id: number;
   name: string;

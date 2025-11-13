@@ -3,6 +3,7 @@ import { useCachedPromise } from "@raycast/utils";
 import { useCanvasAuth } from "./useCanvasAuth";
 import { fetchAssignmentFeed } from "../services/canvasAPI";
 import { FeedItem } from "../types/canvas";
+import { getCurrentDateKey } from "../utils/date";
 
 interface CategorizedFeed {
   assignments: FeedItem[];
@@ -13,9 +14,6 @@ interface CategorizedFeed {
   other: FeedItem[];
 }
 
-/**
- * Categorizes feed items by type
- */
 function categorizeFeedItems(items: FeedItem[]): CategorizedFeed {
   const categorized: CategorizedFeed = {
     assignments: [],
@@ -54,9 +52,15 @@ function categorizeFeedItems(items: FeedItem[]): CategorizedFeed {
 /**
  * Custom hook to fetch and cache the assignment feed
  * Combines calendar events and assignments, categorized by type
+ * Automatically fetches fresh data when a new day starts
  */
 export function useAssignmentFeed() {
   const { isConfigured } = useCanvasAuth();
+
+  // Get current date key - calculated fresh each time the hook runs
+  // This ensures that when the command opens on a new day, the cache key is different
+  // and fresh data will be fetched instead of showing cached data from the previous day
+  const currentDateKey = getCurrentDateKey();
 
   const {
     data: categorizedData,
@@ -64,7 +68,10 @@ export function useAssignmentFeed() {
     error,
     revalidate,
   } = useCachedPromise(
-    async (configured: boolean): Promise<CategorizedFeed> => {
+    async (configured: boolean, _dateKey: string): Promise<CategorizedFeed> => {
+      // _dateKey is included in dependencies to invalidate cache when date changes
+      // but we don't need to use it in the function body
+      void _dateKey; // Suppress unused parameter warning
       if (!configured) {
         console.log("useAssignmentFeed: Not configured, returning empty categories");
         return {
@@ -82,7 +89,9 @@ export function useAssignmentFeed() {
 
       return categorized;
     },
-    [isConfigured],
+    // Include currentDateKey in the dependency array so cache invalidates when date changes
+    // This ensures fresh data is fetched when a new day starts
+    [isConfigured, currentDateKey],
     {
       initialData: {
         assignments: [],
@@ -92,7 +101,7 @@ export function useAssignmentFeed() {
         calendarEvents: [],
         other: [],
       },
-      keepPreviousData: true,
+      keepPreviousData: false, // Don't keep previous day's data when date changes
       onError: (error) => {
         showToast({
           style: Toast.Style.Failure,
