@@ -1,28 +1,16 @@
 import { List, Icon, ActionPanel, Action } from "@raycast/api";
 import { useCourseAssignments } from "../hooks/useCourseAssignments";
-import { CanvasCourse, CanvasAssignment } from "../types/canvas";
-import { formatDate } from "../utils/date";
+import { CanvasCourse } from "../types/canvas";
 import { useCanvasAuth } from "../hooks/useCanvasAuth";
+import { AssignmentListItem } from "./AssignmentListItem";
 
 interface CourseDetailViewProps {
   course: CanvasCourse;
 }
 
 export function CourseDetailView({ course }: CourseDetailViewProps) {
-  const { active, pastDue, isLoading, error, revalidate } = useCourseAssignments(course.id);
+  const { active, pastDue, submitted, isLoading, error, revalidate } = useCourseAssignments(course.id);
   const { config } = useCanvasAuth();
-
-  const getAssignmentIcon = (assignment: CanvasAssignment) => {
-    const hasSubmission =
-      assignment.submission &&
-      assignment.submission.workflow_state !== "unsubmitted" &&
-      (assignment.submission.workflow_state === "submitted" ||
-        assignment.submission.workflow_state === "graded" ||
-        assignment.submission.workflow_state === "pending_review");
-
-    if (hasSubmission) return Icon.CheckCircle;
-    return Icon.Circle;
-  };
 
   if (error) {
     return (
@@ -41,79 +29,7 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
     );
   }
 
-  const renderAssignment = (assignment: CanvasAssignment) => {
-    const subtitleParts: string[] = [];
-
-    // Show submission info if submitted
-    const submission = assignment.submission;
-    const hasSubmission =
-      submission &&
-      submission.workflow_state !== "unsubmitted" &&
-      (submission.workflow_state === "submitted" ||
-        submission.workflow_state === "graded" ||
-        submission.workflow_state === "pending_review");
-
-    if (hasSubmission && submission) {
-      if (submission.submitted_at) {
-        subtitleParts.push(`Submitted: ${formatDate(submission.submitted_at)}`);
-      }
-      if (submission.score !== undefined && submission.score !== null) {
-        subtitleParts.push(`Score: ${submission.score}/${assignment.points_possible}`);
-      }
-    }
-
-    // Always show due date
-    if (assignment.due_at) {
-      subtitleParts.push(`Due: ${formatDate(assignment.due_at)}`);
-    } else {
-      subtitleParts.push("No due date");
-    }
-
-    const accessories = [];
-    if (assignment.points_possible > 0) {
-      accessories.push({
-        text:
-          assignment.submission?.score !== undefined && assignment.submission?.score !== null
-            ? `${assignment.submission.score}/${assignment.points_possible} pts`
-            : `${assignment.points_possible} pts`,
-        icon: Icon.Star,
-      });
-    } else {
-      accessories.push({
-        text: "Ungraded",
-        icon: Icon.Star,
-      });
-    }
-
-    const assignmentUrl = config?.canvasBaseUrl
-      ? `${config.canvasBaseUrl.replace(/\/$/, "")}/courses/${assignment.course_id}/assignments/${assignment.id}`
-      : null;
-
-    return (
-      <List.Item
-        key={assignment.id}
-        title={assignment.name}
-        subtitle={subtitleParts.join(" • ")}
-        accessories={accessories}
-        icon={getAssignmentIcon(assignment)}
-        actions={
-          <ActionPanel>
-            {assignmentUrl && (
-              <Action.OpenInBrowser title="Open Assignment in Browser" icon={Icon.Globe} url={assignmentUrl} />
-            )}
-            <Action
-              title="Refresh Assignments"
-              icon={Icon.ArrowClockwise}
-              onAction={() => revalidate()}
-              shortcut={{ modifiers: ["cmd"], key: "r" }}
-            />
-          </ActionPanel>
-        }
-      />
-    );
-  };
-
-  const totalAssignments = active.length + pastDue.length;
+  const totalAssignments = active.length + pastDue.length + submitted.length;
 
   return (
     <List
@@ -143,12 +59,38 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
         <>
           {active.length > 0 && (
             <List.Section title={`Active (${active.length})`}>
-              {active.map((assignment) => renderAssignment(assignment))}
+              {active.map((assignment) => (
+                <AssignmentListItem
+                  key={assignment.id}
+                  item={assignment}
+                  canvasBaseUrl={config?.canvasBaseUrl}
+                  onRefresh={revalidate}
+                />
+              ))}
+            </List.Section>
+          )}
+          {submitted.length > 0 && (
+            <List.Section title={`Submitted (${submitted.length})`}>
+              {submitted.map((assignment) => (
+                <AssignmentListItem
+                  key={assignment.id}
+                  item={assignment}
+                  canvasBaseUrl={config?.canvasBaseUrl}
+                  onRefresh={revalidate}
+                />
+              ))}
             </List.Section>
           )}
           {pastDue.length > 0 && (
             <List.Section title={`Past Due (${pastDue.length})`}>
-              {pastDue.map((assignment) => renderAssignment(assignment))}
+              {pastDue.map((assignment) => (
+                <AssignmentListItem
+                  key={assignment.id}
+                  item={assignment}
+                  canvasBaseUrl={config?.canvasBaseUrl}
+                  onRefresh={revalidate}
+                />
+              ))}
             </List.Section>
           )}
         </>

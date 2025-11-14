@@ -1,116 +1,13 @@
 import { List, Icon, ActionPanel, Action } from "@raycast/api";
 import { useAssignmentFeed } from "../hooks/useAssignmentFeed";
 import { FeedItem } from "../types/canvas";
-import { formatDateSectionTitle, getDateKey, formatTime } from "../utils/date";
-import { truncateTitle } from "../utils/text";
+import { formatDateSectionTitle, getDateKey } from "../utils/date";
 import { useCanvasAuth } from "../hooks/useCanvasAuth";
+import { AssignmentListItem } from "./AssignmentListItem";
 
 export function AssignmentFeedView() {
   const { allItems, isLoading, error, revalidate } = useAssignmentFeed();
   const { config } = useCanvasAuth();
-
-  const getTypeIcon = (item: FeedItem) => {
-    switch (item.type) {
-      case "assignment":
-        return Icon.Document;
-      case "quiz":
-        return Icon.QuestionMark;
-      case "exam":
-        return Icon.Clipboard;
-      case "announcement":
-        return Icon.Megaphone;
-      case "calendar_event":
-        return Icon.Calendar;
-      default:
-        return Icon.Circle;
-    }
-  };
-
-  const getStatusIcon = (item: FeedItem) => {
-    if (item.submission) return Icon.CheckCircle;
-    if (!item.due_at) return null;
-    const dueDate = new Date(item.due_at);
-    const now = new Date();
-    if (dueDate < now) return Icon.XMarkCircle;
-    if (dueDate.getTime() - now.getTime() < 24 * 60 * 60 * 1000) return Icon.ExclamationMark;
-    return null;
-  };
-
-  const renderFeedItem = (item: FeedItem) => {
-    const subtitleParts: string[] = [];
-
-    if (item.course_name) {
-      subtitleParts.push(item.course_name);
-    }
-
-    if (item.location_name) {
-      subtitleParts.push(` ${item.location_name}`);
-    }
-
-    const accessories = [];
-
-    const statusIcon = getStatusIcon(item);
-    if (statusIcon) {
-      accessories.push({ icon: statusIcon });
-    }
-
-    if (item.due_at) {
-      accessories.push({
-        text: formatTime(item.due_at),
-      });
-    } else if (item.start_at) {
-      accessories.push({
-        text: formatTime(item.start_at),
-      });
-    }
-
-    let itemUrl: string | null = null;
-    if (config?.canvasBaseUrl && item.course_id) {
-      const baseUrl = config.canvasBaseUrl.replace(/\/$/, "");
-      if (item.assignment_id) {
-        itemUrl = `${baseUrl}/courses/${item.course_id}/assignments/${item.assignment_id}`;
-      } else if (item.quiz_id) {
-        itemUrl = `${baseUrl}/courses/${item.course_id}/quizzes/${item.quiz_id}`;
-      } else if (item.course_id) {
-        itemUrl = `${baseUrl}/courses/${item.course_id}`;
-      }
-    }
-
-    const subtitle = subtitleParts.join(" • ");
-
-    return (
-      <List.Item
-        key={item.id}
-        title={truncateTitle(item.title)}
-        subtitle={subtitle}
-        accessories={accessories}
-        icon={getTypeIcon(item)}
-        actions={
-          <ActionPanel>
-            {itemUrl && (
-              <Action.OpenInBrowser
-                title={
-                  item.assignment_id
-                    ? "Open Assignment in Browser"
-                    : item.quiz_id
-                      ? "Open Quiz in Browser"
-                      : "Open in Browser"
-                }
-                icon={Icon.Globe}
-                url={itemUrl}
-              />
-            )}
-            <Action
-              title="Refresh Feed"
-              icon={Icon.ArrowClockwise}
-              onAction={() => revalidate()}
-              shortcut={{ modifiers: ["cmd"], key: "r" }}
-            />
-          </ActionPanel>
-        }
-      />
-    );
-  };
 
   if (error) {
     return (
@@ -174,7 +71,14 @@ export function AssignmentFeedView() {
                 : formatDateSectionTitle(items[0]?.due_at || items[0]?.start_at);
             return (
               <List.Section key={dateKey} title={sectionTitle}>
-                {items.map((item) => renderFeedItem(item))}
+                {items.map((item) => (
+                  <AssignmentListItem
+                    key={item.id}
+                    item={item}
+                    canvasBaseUrl={config?.canvasBaseUrl}
+                    onRefresh={revalidate}
+                  />
+                ))}
               </List.Section>
             );
           })}

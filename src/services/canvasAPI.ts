@@ -47,6 +47,13 @@ export async function fetchCourseAssignments(courseId: number): Promise<CanvasAs
 }
 
 /**
+ * Fetches a single assignment by ID with full details including description
+ */
+export async function fetchAssignment(courseId: number, assignmentId: number): Promise<CanvasAssignment> {
+  return makeCanvasRequest<CanvasAssignment>(`/courses/${courseId}/assignments/${assignmentId}?include[]=submission`);
+}
+
+/**
  * Fetches user's assignments across all courses
  */
 export async function fetchAllAssignments(): Promise<CanvasAssignment[]> {
