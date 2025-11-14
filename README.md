@@ -37,7 +37,7 @@ A powerful Raycast extension for managing your Canvas LMS courses, assignments, 
 - **Batch Downloads**: Download all files from an assignment description at once
 - **File Extraction**: Automatically extracts file links from HTML assignment descriptions
 
-### ⚙️ Directory Setup
+### Directory Setup
 - **One-Time Setup**: Configure your directory structure once and reuse it for all courses
 - **Term Organization**: Group courses by enrollment term with customizable term names
 - **Custom Directory Names**: Customize how course directories are named
