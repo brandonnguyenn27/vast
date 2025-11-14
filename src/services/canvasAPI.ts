@@ -1,5 +1,12 @@
 import { getCanvasConfig } from "./oauth";
-import { CanvasCourse, CanvasAssignment, CanvasUpcomingEvent, FeedItem, FeedItemType } from "../types/canvas";
+import {
+  CanvasCourse,
+  CanvasAssignment,
+  CanvasUpcomingEvent,
+  FeedItem,
+  FeedItemType,
+  CanvasFile,
+} from "../types/canvas";
 
 /**
  * Makes authenticated requests to Canvas API using personal access token
@@ -241,4 +248,62 @@ export async function fetchAssignmentFeed(): Promise<FeedItem[]> {
 export function isCanvasConfigured(): boolean {
   const config = getCanvasConfig();
   return !!(config?.baseUrl && config?.apiToken);
+}
+
+/**
+ * Fetches file information from Canvas API
+ */
+export async function fetchFileInfo(fileId: number): Promise<CanvasFile> {
+  return makeCanvasRequest<CanvasFile>(`/files/${fileId}`);
+}
+
+/**
+ * Downloads a file from Canvas to a local destination path
+ * Handles authentication and file streaming
+ */
+export async function downloadFile(fileId: number, destinationPath: string): Promise<void> {
+  const config = getCanvasConfig();
+  if (!config) {
+    throw new Error("Canvas configuration not found. Please configure Canvas Base URL and API Token in preferences.");
+  }
+
+  // First, get file info to get the download URL
+  const fileInfo = await fetchFileInfo(fileId);
+
+  // Get the download URL - Canvas API provides a url field that may need redirect handling
+  let downloadUrl = fileInfo.url;
+
+  // If the URL is relative, make it absolute
+  if (downloadUrl.startsWith("/")) {
+    downloadUrl = `${config.baseUrl}${downloadUrl}`;
+  }
+
+  // Make authenticated request to download the file
+  const response = await fetch(downloadUrl, {
+    headers: {
+      Authorization: `Bearer ${config.apiToken}`,
+    },
+    redirect: "follow", // Follow redirects
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("Invalid API token. Please check your Canvas API token in preferences.");
+    }
+    if (response.status === 403) {
+      throw new Error("Access forbidden. You may not have permission to download this file.");
+    }
+    if (response.status === 404) {
+      throw new Error("File not found. The file may have been deleted or moved.");
+    }
+    throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+  }
+
+  // Get the file content as a buffer
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  // Write file to destination
+  const { writeFile } = await import("fs/promises");
+  await writeFile(destinationPath, buffer);
 }

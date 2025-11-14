@@ -109,3 +109,17 @@ export interface FeedItem {
   workflow_state?: string;
   submission?: CanvasSubmission;
 }
+
+// Canvas file API response structure
+export interface CanvasFile {
+  id: number;
+  uuid: string;
+  folder_id: number;
+  display_name: string;
+  filename: string;
+  content_type: string;
+  size: number;
+  url: string;
+  created_at: string;
+  updated_at: string;
+}

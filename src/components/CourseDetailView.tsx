@@ -1,8 +1,11 @@
 import { List, Icon, ActionPanel, Action } from "@raycast/api";
+import { useCachedPromise } from "@raycast/utils";
 import { useCourseAssignments } from "../hooks/useCourseAssignments";
 import { CanvasCourse } from "../types/canvas";
 import { useCanvasAuth } from "../hooks/useCanvasAuth";
 import { AssignmentListItem } from "./AssignmentListItem";
+import { useVastDirectory } from "../hooks/useVastDirectory";
+import { getCourseDirectoryPath } from "../utils/assignmentDirectory";
 
 interface CourseDetailViewProps {
   course: CanvasCourse;
@@ -11,6 +14,16 @@ interface CourseDetailViewProps {
 export function CourseDetailView({ course }: CourseDetailViewProps) {
   const { active, pastDue, submitted, isLoading, error, revalidate } = useCourseAssignments(course.id);
   const { config } = useCanvasAuth();
+  const { baseDirectory, isConfigured: isVastConfigured } = useVastDirectory();
+
+  // Get course directory path for opening in Finder
+  const { data: courseDirectoryPath } = useCachedPromise(
+    async (baseDir: string | null, isConfigured: boolean, courseData: CanvasCourse) => {
+      if (!baseDir || !isConfigured) return null;
+      return await getCourseDirectoryPath(baseDir, courseData);
+    },
+    [baseDirectory, isVastConfigured, course],
+  );
 
   if (error) {
     return (
@@ -44,6 +57,14 @@ export function CourseDetailView({ course }: CourseDetailViewProps) {
               icon={Icon.Globe}
               url={`${config.canvasBaseUrl.replace(/\/$/, "")}/courses/${course.id}`}
               shortcut={{ modifiers: ["cmd"], key: "o" }}
+            />
+          )}
+          {isVastConfigured && courseDirectoryPath && typeof courseDirectoryPath === "string" && (
+            <Action.ShowInFinder
+              title="Open Course Directory"
+              icon={Icon.Folder}
+              path={courseDirectoryPath}
+              shortcut={{ modifiers: ["cmd", "shift"], key: "o" }}
             />
           )}
           <Action
