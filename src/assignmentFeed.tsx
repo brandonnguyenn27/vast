@@ -7,13 +7,13 @@ import { AssignmentFeedView } from "./components/AssignmentFeedView";
 
 export default function AssignmentFeedCommand() {
   const { isConfigured: isCanvasConfigured } = useCanvasAuth();
-  const { isConfigured: isDirectoryConfigured } = useVastDirectory();
+  const { isConfigured: isVastDirectoryConfigured } = useVastDirectory();
 
   if (!isCanvasConfigured) {
     return <CanvasSetupForm />;
   }
 
-  if (!isDirectoryConfigured) {
+  if (!isVastDirectoryConfigured) {
     return <VastSetupForm />;
   }
 

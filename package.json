@@ -33,7 +33,7 @@
       "title": "Vast Base Directory",
       "description": "Base directory where course folders will be created",
       "type": "textfield",
-      "required": false,
+      "required": true,
       "placeholder": "/Users/username/Documents/Vast"
     }
   ],

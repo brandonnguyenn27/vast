@@ -6,13 +6,13 @@ import { CoursesView } from "./components/CoursesView";
 
 export default function Command() {
   const { isConfigured: isCanvasConfigured } = useCanvasAuth();
-  const { isConfigured: isDirectoryConfigured } = useVastDirectory();
+  const { isConfigured: isVastDirectoryConfigured } = useVastDirectory();
 
   if (!isCanvasConfigured) {
     return <CanvasSetupForm />;
   }
 
-  if (!isDirectoryConfigured) {
+  if (!isVastDirectoryConfigured) {
     return <VastSetupForm />;
   }
 
